@@ -1,1 +1,3 @@
-# e-MOB_v1
+# Capteurs de detection de sedentarité
+## Projet e-MOB
+
