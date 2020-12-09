@@ -3,15 +3,15 @@
 #include <Arduino_LSM9DS1.h>
 
 BLEService eMOBService("1809");
-BLEStringCharacteristic accelerometerChar("107b", BLERead | BLENotify, 20);
+BLEStringCharacteristic accelerometerChar("107b", BLERead | BLENotify, 30);
 // BLEStringCharacteristic gyroscopeChar("107b", BLERead | BLENotify, 50);
 // BLEStringCharacteristic magnetometerChar("107b", BLERead | BLENotify, 50);
 bool isConnected = false;
 float Ax = 0.0, Ay = 0.0, Az = 0.0;
 float Gx, Gy, Gz;
 float Mx, My, Mz;
-unsigned long last_t=micros();
-unsigned long actual_t=micros();
+unsigned long last_t=millis();
+unsigned long actual_t=millis();
 
 void bleConnectedHandler(BLEDevice central)
 {
@@ -69,13 +69,14 @@ void setup()
 
   accelerometerChar.setEventHandler(BLESubscribed, charSubscribedHandler);
   accelerometerChar.setEventHandler(BLEUnsubscribed, charUnsubscribedHandler);
-
+  
   BLE.advertise();
 }
 
 void loop()
 {
   BLE.poll(); //TODO check here time optimization
+  actual_t = millis();
   if (isConnected)
   {
     if (IMU.accelerationAvailable())
@@ -83,9 +84,9 @@ void loop()
       IMU.readAcceleration(Ax, Ay, Az);
       //unsigned long actual_t = millis();
       String accelerometerData = String(Ax) + " " + String(Ay) + " " + String(Az) + " " + String(actual_t - last_t);
-      actual_t = micros();
       accelerometerChar.writeValue(accelerometerData);
       last_t = actual_t;
     }
   }
+  Serial.flush();
 }
