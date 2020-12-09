@@ -3,10 +3,15 @@
 #include <Arduino_LSM9DS1.h>
 
 BLEService eMOBService("1809");
-BLEStringCharacteristic accelerometerChar("107b", BLERead | BLENotify, 50);
-
+BLEStringCharacteristic accelerometerChar("107b", BLERead | BLENotify, 20);
+// BLEStringCharacteristic gyroscopeChar("107b", BLERead | BLENotify, 50);
+// BLEStringCharacteristic magnetometerChar("107b", BLERead | BLENotify, 50);
 bool isConnected = false;
-float Ax, Ay, Az;
+float Ax = 0.0, Ay = 0.0, Az = 0.0;
+float Gx, Gy, Gz;
+float Mx, My, Mz;
+unsigned long last_t=micros();
+unsigned long actual_t=micros();
 
 void bleConnectedHandler(BLEDevice central)
 {
@@ -36,8 +41,8 @@ void charSubscribedHandler(BLEDevice central, BLECharacteristic characteristic)
 
 void setup()
 {
-  Serial.begin(9600); 
-  pinMode(LED_BUILTIN, OUTPUT); 
+  Serial.begin(115200);
+  pinMode(LED_BUILTIN, OUTPUT);
   if (!BLE.begin())
   {
     Serial.println("Starting BLE failed!");
@@ -52,18 +57,19 @@ void setup()
   }
   BLE.setDeviceName("eMOB_BLE");
   BLE.setLocalName("eMOB_BLE");
-  BLE.setAdvertisedService(eMOBService);        
-  
-  eMOBService.addCharacteristic(accelerometerChar); 
-  
+  BLE.setAdvertisedService(eMOBService);
+
+  eMOBService.addCharacteristic(accelerometerChar);
+  // eMOBService.addCharacteristic(gyroscopeChar);
+  // eMOBService.addCharacteristic(magnetometerChar);
+
   BLE.addService(eMOBService);
   BLE.setEventHandler(BLEConnected, bleConnectedHandler);
   BLE.setEventHandler(BLEDisconnected, bleDisconnectedHandler);
 
   accelerometerChar.setEventHandler(BLESubscribed, charSubscribedHandler);
   accelerometerChar.setEventHandler(BLEUnsubscribed, charUnsubscribedHandler);
-  accelerometerChar.writeValue("0");
-  
+
   BLE.advertise();
 }
 
@@ -75,9 +81,11 @@ void loop()
     if (IMU.accelerationAvailable())
     {
       IMU.readAcceleration(Ax, Ay, Az);
-      String accelerometerData = String(Ax) + " " + String(Ay) + " " + String(Az);
+      //unsigned long actual_t = millis();
+      String accelerometerData = String(Ax) + " " + String(Ay) + " " + String(Az) + " " + String(actual_t - last_t);
+      actual_t = micros();
       accelerometerChar.writeValue(accelerometerData);
+      last_t = actual_t;
     }
   }
 }
-
