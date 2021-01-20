@@ -34,7 +34,8 @@ void setup()
     while (1)
       ;
   }
-
+  
+  BLE.setConnectionInterval(0x0006, 0x0006); // minimum and maximum connection interval set at 7.5ms
   BLE.setDeviceName("eMOB_BLE");
   BLE.setLocalName("eMOB_BLE");
   BLE.setAdvertisedService(eMOBService);
@@ -80,7 +81,6 @@ void loop()
     Serial.print("Freq: ");
     Serial.println((float)(count * 1000.0) / (end - start));
     count = 0;
-    Serial.printf("%s  \n ", buffer);
     //BLE.disconnect();
     // delay(10000);
   }
