@@ -2,51 +2,48 @@
 #include <Arduino_LSM9DS1.h>
 #include <ArduinoBLE.h>
 
-BLEService eMOBService("7730e37f-21a3-407e-96e0-d39c83bb989c");
-BLEStringCharacteristic IMU_characteristic("72ce899b-0049-4e10-9ae6-f440822db322", BLERead | BLENotify, 60);
+BLEService environmentService("181A");
+BLEStringCharacteristic IMU_characteristic("e95dca4b-251d-470a-a062-fa1922dfa9a8", BLERead | BLENotify, 90);
+BLEDescriptor IMULabelDescriptor("2901", "3 Axis IMU data ints: AccX|AccY|AccZ GyrX|GyrY|GyrZ MagX|MagY|MagZ");
 
 bool isSubscribed = false;
 
 float Ax = 0.0, Ay = 0.0, Az = 0.0;
-float Gx = 0, Gy = 0, Gz = 0;
-float Mx = 0, My = 0, Mz = 0;
-unsigned long start=0, end=0, count = 0;
-char buffer[58];
+float Gx = 0.0, Gy = 0.0, Gz = 0.0;
+float Mx = 0.0, My = 0.0, Mz = 0.0;
+
+char buffer[70];
 
 void charUnsubscribedHandler(BLEDevice central, BLECharacteristic characteristic);
 void charSubscribedHandler(BLEDevice central, BLECharacteristic characteristic);
+void connectedHandler(BLEDevice central);
+void disconnectedHandler(BLEDevice central);
 
 void setup()
 {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  
-  if (!BLE.begin())
-  {
-    Serial.println("Starting BLE failed!");
-    while (1)
-      ;
-  }
 
-  if (!IMU.begin())
-  {
-    Serial.println("Failed to initialize IMU!");
-    while (1)
-      ;
-  }
-  
-  BLE.setConnectionInterval(0x0006, 0x0006); // minimum and maximum connection interval set at 7.5ms
-  BLE.setDeviceName("eMOB_BLE");
+  while (!BLE.begin())
+    ;
+  while (!IMU.begin())
+    ;
+
   BLE.setLocalName("eMOB_BLE");
-  BLE.setAdvertisedService(eMOBService);
+  BLE.setConnectionInterval(0x0006, 0x0006); // minimum and maximum connection interval set at 7.5ms
+  BLE.setAdvertisedService(environmentService);
 
-  eMOBService.addCharacteristic(IMU_characteristic);
-  BLE.addService(eMOBService);
+  environmentService.addCharacteristic(IMU_characteristic);
+  IMU_characteristic.addDescriptor(IMULabelDescriptor);
+
+  BLE.addService(environmentService);
+  BLE.setEventHandler(BLEConnected, connectedHandler);
+  BLE.setEventHandler(BLEDisconnected, disconnectedHandler);
 
   IMU_characteristic.setEventHandler(BLESubscribed, charSubscribedHandler);
   IMU_characteristic.setEventHandler(BLEUnsubscribed, charUnsubscribedHandler);
-
   IMU_characteristic.writeValue("0");
+  
   BLE.advertise();
 
   while (!IMU.magneticFieldAvailable())
@@ -54,7 +51,6 @@ void setup()
 
   //initialize magnetic field data
   IMU.readMagneticField(Mx, My, Mz);
-
   IMU.setContinuousMode();
 }
 
@@ -73,16 +69,9 @@ void loop()
       IMU.readGyroscope(Gx, Gy, Gz);
     }
 
-    sprintf(buffer, "%.0f|%.0f|%.0f %.0f|%.0f|%.0f %.0f|%.0f|%.0f ", (Ax*1000), (Ay*1000), (Az*1000), (Gx*10), (Gy*10), (Gz*10), (Mx*10), (My*10), (Mz*10)); // transform char* to string
+    sprintf(buffer, "%lu %.0f|%.0f|%.0f %.0f|%.0f|%.0f %.0f|%.0f|%.0f ", millis(), (Ax * 1000), (Ay * 1000), (Az * 1000), (Gx * 10), (Gy * 10), (Gz * 10), (Mx * 10), (My * 10), (Mz * 10)); // transform char* to string
     IMU_characteristic.writeValue(buffer);
-    count++;
-  }
-  else if(!isSubscribed && end>start && count !=0){
-    Serial.print("Freq: ");
-    Serial.println((float)(count * 1000.0) / (end - start));
-    count = 0;
-    //BLE.disconnect();
-    // delay(10000);
+    delay(5); //TODO
   }
 }
 
@@ -91,7 +80,6 @@ void charUnsubscribedHandler(BLEDevice central, BLECharacteristic characteristic
   Serial.println(F("Unsubscribed "));
   isSubscribed = false;
   digitalWrite(LED_BUILTIN, LOW);
-  end = millis();
 }
 
 void charSubscribedHandler(BLEDevice central, BLECharacteristic characteristic)
@@ -99,5 +87,15 @@ void charSubscribedHandler(BLEDevice central, BLECharacteristic characteristic)
   isSubscribed = true;
   Serial.println(F("Subscribed "));
   digitalWrite(LED_BUILTIN, HIGH);
-  start = millis();
+}
+
+void connectedHandler(BLEDevice central){
+  Serial.print(F("Connected to "));
+  Serial.println(central.address());
+}
+
+void disconnectedHandler(BLEDevice central){
+  Serial.println(F("Disconnected to "));
+  Serial.println(central.address());
+  BLE.advertise();
 }
