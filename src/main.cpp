@@ -28,12 +28,13 @@ void setup()
     ;
   while (!IMU.begin())
     ;
-
+  
+  /* Change local name accordingly before flashing device */
   BLE.setLocalName("BrasGauche"); //5F:00
-  BLE.setLocalName("BrasDroit"); //79:00
-  BLE.setLocalName("Tronc"); //C4:00
-  BLE.setLocalName("JambeG"); //07:00
-  BLE.setLocalName("JambeD"); //AB:00
+  // BLE.setLocalName("BrasDroit"); //79:00
+  // BLE.setLocalName("Tronc"); //C4:00
+  // BLE.setLocalName("JambeG"); //07:00
+  // BLE.setLocalName("JambeD"); //AB:00
 
   BLE.setConnectionInterval(0x0006, 0x0006); // minimum and maximum connection interval set at 7.5ms
   BLE.setAdvertisedService(environmentService);
