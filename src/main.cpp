@@ -29,7 +29,12 @@ void setup()
   while (!IMU.begin())
     ;
 
-  BLE.setLocalName("eMOB_BLE");
+  BLE.setLocalName("BrasGauche"); //5F:00
+  BLE.setLocalName("BrasDroit"); //79:00
+  BLE.setLocalName("Tronc"); //C4:00
+  BLE.setLocalName("JambeG"); //07:00
+  BLE.setLocalName("JambeD"); //AB:00
+
   BLE.setConnectionInterval(0x0006, 0x0006); // minimum and maximum connection interval set at 7.5ms
   BLE.setAdvertisedService(environmentService);
 
@@ -42,6 +47,7 @@ void setup()
 
   IMU_characteristic.setEventHandler(BLESubscribed, charSubscribedHandler);
   IMU_characteristic.setEventHandler(BLEUnsubscribed, charUnsubscribedHandler);
+  
   IMU_characteristic.writeValue("0");
   
   BLE.advertise();
@@ -71,7 +77,7 @@ void loop()
 
     sprintf(buffer, "%lu %.0f|%.0f|%.0f %.0f|%.0f|%.0f %.0f|%.0f|%.0f ", millis(), (Ax * 1000), (Ay * 1000), (Az * 1000), (Gx * 10), (Gy * 10), (Gz * 10), (Mx * 10), (My * 10), (Mz * 10)); // transform char* to string
     IMU_characteristic.writeValue(buffer);
-    delay(5); //TODO
+    delay(3); //TODO
   }
 }
 
